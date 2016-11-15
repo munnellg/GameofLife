@@ -9,6 +9,9 @@ class GameOfLife:
         # it makes it easier to test for life and death
         self.cells = [ [self.DEAD]*(width+2) for i in range(height+2)]
 
+        # Remember previous states so we can rewind
+        self.memory = []
+
     # Count how many live cells surround the cell at (x,y)
     def __count_neighbours(self, x, y):
         # Our count starts at zero
@@ -83,6 +86,14 @@ class GameOfLife:
             for x in range(len(self.cells[y])):
                 self.cells[y][x] = self.DEAD
 
+    # Rewind the game of life by n_steps
+    def rewind(self, n_steps):
+        for i in range(0, min(n_steps, len(self.memory))):
+            to_be_flipped = self.memory[-1]
+            del self.memory[-1]
+            for cell_position in to_be_flipped:
+                self.__flip(*cell_position)
+
     # Advance the state of the game of life
     def update(self):
         # Flags will keep track of all cells that are either coming to life
@@ -100,6 +111,16 @@ class GameOfLife:
         # Go over all the cells that we decided to flip and switch their values
         for cell_position in to_be_flipped:
             self.__flip(*cell_position)
+
+            
+        # If we changed anything, remember it
+        if len(to_be_flipped) > 0:
+            self.memory.append(to_be_flipped)
+
+            # Lazy method of capping memory limit.
+            # Don't want long simulations to kill RAM
+            if len(self.memory) > 10000:
+                self.memory=self.memory[1:]
 
         return len(to_be_flipped) != 0
 

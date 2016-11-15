@@ -19,10 +19,17 @@ class Screen:
         # Set up a few state variables
         self.animating = False
         self.step      = False
-        self.mouse_effect = self.gol.ALIVE
+        self.rewind    = False
 
     def update(self):
-        # If we're animating or stepping, then advance the game
+        # If we're rewinding, move back one and stop
+        # animating in the other direction
+        if self.rewind:
+            self.gol.rewind(1)
+            self.animating = False
+            self.step      = False
+            self.rewind    = False
+
         if self.animating or self.step:
             self.gol.update()
             # If we stepped, cease all animation after the step
@@ -90,36 +97,31 @@ class Screen:
                     if event.key == event.key == pygame.K_SPACE:
                         # Player hit spacebar. Either start or stop animating
                         self.animating = not self.animating
-                    elif (event.key == pygame.K_UP or
-                        event.key == pygame.K_DOWN or
-                        event.key == pygame.K_RIGHT or
-                        event.key == pygame.K_LEFT):
-                        # Player pressed an arrow key. Advance the state of the
-                        # game by one
+                    elif event.key == pygame.K_RIGHT:
                         self.step = True
+                    elif event.key == pygame.K_LEFT:
+                          self.rewind = True
                     elif event.key == pygame.K_c:
                         # Player pressed an arrow key. Advance the state of the
                         # game by one
                         self.gol.reset()
                         self.step = False
                         self.animating=False
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    # Player clicked on a square. Flip it's state and store
-                    # the action in case they start dragging
-                    pos = pygame.mouse.get_pos()
-                    x = pos[0]//self.cell_size
-                    y = pos[1]//self.cell_size
-                    self.mouse_effect = 1-self.gol.get_cell(x,y)
-                    self.gol.set_cell(x,y, self.mouse_effect)
-                elif event.type == pygame.MOUSEMOTION:
+                elif event.type == pygame.MOUSEMOTION or event.type==pygame.MOUSEBUTTONDOWN:
                     # Check to see if user is dragging their mouse across
                     # The screen. If so, set the states of any cells they move
                     # over as appropriate
                     if pygame.mouse.get_pressed()[0]:
-                        pos = pygame.mouse.get_pos()
-                        x = pos[0]//self.cell_size
-                        y = pos[1]//self.cell_size
-                        self.gol.set_cell(x,y, self.mouse_effect)
+                        effect = self.gol.ALIVE
+                    elif pygame.mouse.get_pressed()[2]:
+                        effect = self.gol.DEAD
+                    else:
+                        continue
+
+                    pos = pygame.mouse.get_pos()
+                    x = pos[0]//self.cell_size
+                    y = pos[1]//self.cell_size
+                    self.gol.set_cell(x,y, effect)
 
             # Keep track of elapsed frames
             frame_count = frame_count+1
